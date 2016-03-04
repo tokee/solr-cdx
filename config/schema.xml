@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<!--  
+This is the (simple) heart of solr-cdx. It can be used as-is for having a Solr-installation
+that acts solely as a CDX Server, but it might be worth it to consider merging it into
+an existing Solr used for full-text search in net archives, thereby avoiding the need for
+running two services.
+
+Note that most fields have DocValues, which are needed for streaming export and for lowering
+memory requirements with grouping and faceting.
+
+Reference: https://archive.org/web/researcher/cdx_file_format.php
+CDX A b e a m s c k r V v D d g M n
+-->
+
+<schema name="example" version="1.5">
+  <!-- The id field must be unique and should be resonably short. digest+timestamp is a possibility-->
+  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" /> 
+
+  <!-- A canonized url (SURT & normalised) -->
+  <field name="url"    type="string" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true" required="true"/>
+  <!-- b date (tdate as it is often used with ranges) -->
+  <field name="tdate"  type="date"   indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true" required="true"/>
+  <!-- e IP -->
+  <field name="ip"     type="int"    indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- a original URL -->
+  <field name="ourl"   type="string" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true" required="true"/>
+  <!-- m mime type of original document-->
+  <field name="mime"   type="string" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- s response code-->
+  <field name="response" type="int"  indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- c old style checksum-->
+  <field name="digest" type="string" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- k new style checksum -->
+  <field name="newdigest" type="string" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- r redirect (TODO: Figure out what this is. A boolean maybe?) -->
+  <field name="redirect" type="string" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- V compressed ARC file offset -->
+  <field name="offset" type="long" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- v uncompressed ARC file offset -->
+  <field name="uoffset" type="long" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- D compressed DAT offset -->
+  <field name="doffset" type="long" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- d uncompressed DAT offset -->
+  <field name="udoffset" type="long" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- g file name (WARC/ARC)-->
+  <field name="arc" type="string" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+  <!-- M Meta tags AIF -->
+  <field name="meta" type="string" indexed="true" stored="true" omitNorms="true" multiValued="true" docValues="true"/>
+  <!-- n arc document length -->
+  <field name="arclength" type="long" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
+
+
+  <!-- Special purpose fields to handle domain + path truncation lookups -->
+
+  <!-- SURT domain (consider setting docValues="true" if used with full-text search, so it can be used for faceting -->
+  <field name="sdomain" type="string" indexed="true" stored="false" omitNorms="true" multiValued="false" docValues="false"/>
+  <!-- Path normalised the same way as 'url' -->
+  <field name="path" type="string" indexed="true" stored="false" omitNorms="true" multiValued="false" docValues="false"/>
+
+
+  <!-- Field types -->
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
+  <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" positionIncrementGap="0"/>
+
+  <!--
+      Numeric field types that index each value at various levels of precision
+      to accelerate range queries when the number of values between the range
+      endpoints is large. See the javadoc for NumericRangeQuery for internal
+      implementation details.
+
+Smaller precisionStep values (specified in bits) will lead to more tokens
+indexed per value, slightly larger index size, and faster range queries.
+A precisionStep of 0 disables indexing at different precision levels.
+  -->
+  <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" positionIncrementGap="0"/>
+  <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
+
+  <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
+       is a more restricted form of the canonical representation of dateTime
+       http://www.w3.org/TR/xmlschema-2/#dateTime    
+       The trailing "Z" designates UTC time and is mandatory.
+       Optional fractional seconds are allowed: 1995-12-31T23:59:59.999Z
+       All other components are mandatory.
+
+Expressions can also be used to denote calculations that should be
+performed relative to "NOW" to determine the value, ie...
+
+NOW/HOUR
+... Round to the start of the current hour
+NOW-1DAY
+... Exactly 1 day prior to now
+NOW/DAY+6MONTHS+3DAYS
+... 6 months and 3 days in the future from the start of
+the current day
+
+Consult the TrieDateField javadocs for more information.
+
+Note: For faster range queries, consider the tdate type
+  -->
+  <fieldType name="date" class="solr.TrieDateField" precisionStep="0" positionIncrementGap="0"/>
+
+  <!-- A Trie based date field for faster date range queries and date faceting. -->
+  <fieldType name="tdate" class="solr.TrieDateField" precisionStep="6" positionIncrementGap="0"/>
+
+
+  <!--Binary data type. The data should be sent/retrieved in as Base64 encoded Strings -->
+  <fieldType name="binary" class="solr.BinaryField"/>
+
+  <!-- The "RandomSortField" is not used to store or search any
+       data.  You can declare fields of this type it in your schema
+       to generate pseudo-random orderings of your docs for sorting 
+       or function purposes.  The ordering is generated based on the field
+       name and the version of the index. As long as the index version
+       remains unchanged, and the same field name is reused,
+       the ordering of the docs will be consistent.  
+       If you want different psuedo-random orderings of documents,
+       for the same version of the index, use a dynamicField and
+       change the field name in the request.
+  -->
+  <fieldType name="random" class="solr.RandomSortField" indexed="true" />
+
+</schema>
