@@ -21,7 +21,7 @@ Seen from my point of view (I do a lot of search-stuff, primarily with Solr), th
 Interestingly enough, Solr seems to fit well into this. Extremely well, I would say, but then I am quite biased here. Let's pretend we have a (yet fictional) solr-cdx running and discuss the [CDX Server Requirements](https://github.com/iipc/openwayback/wiki/CDX-Server-requirements):
 
 1. _The user has a link to a particular version of a document:_ This is an exact lookup and can be handled with `query=url:"example.com/kittens.html" AND timestamp:"2016-03-04T20:54:10Z"`.
-  Sample: http://localhost:8983/solr/cdx/select?q=url%3A%22ar%2Ccom%2Cadsclasificados%2Caimogasta)%2Fpublicacion%2Fimages%2F209408_1_small.jpg%22+AND+date%3A%222011-02-25T19%3A03%3A07Z%22&wt=json&indent=true
+  a. Sample: (http://localhost:8983/solr/cdx/select?q=url%3A%22ar%2Ccom%2Cadsclasificados%2Caimogasta)%2Fpublicacion%2Fimages%2F209408_1_small.jpg%22+AND+date%3A%222011-02-25T19%3A03%3A07Z%22&wt=json&indent=true)
 2. _The user selects one particular capture in the calendar:_ This relaxes timestamp-matching to the one closest in time: `query=url:"example.com/kittens.html" & sort=abs(sub(ms(2016-03-04T20:54:10Z), crawl_date)) asc` 
 3. _Get the best matching page when following a link:_ Same as above.
 4. _Get the best match for embedded resources:_ Same as above.
