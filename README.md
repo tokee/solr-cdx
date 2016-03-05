@@ -21,7 +21,7 @@ Seen from my point of view (I do a lot of search-stuff, primarily with Solr), th
 Interestingly enough, Solr seems to fit well into this. Extremely well, I would say, but then I am quite biased here. Let's pretend we have a (yet fictional) solr-cdx running and discuss the [CDX Server Requirements](https://github.com/iipc/openwayback/wiki/CDX-Server-requirements):
 
 1. _The user has a link to a particular version of a document:_ This is an exact lookup and can be handled with `query=url:"example.com/kittens.html" AND timestamp:"2016-03-04T20:54:10Z"`.
-  a. Sample: (http://localhost:8983/solr/cdx/select?q=url%3A%22ar%2Ccom%2Cadsclasificados%2Caimogasta)%2Fpublicacion%2Fimages%2F209408_1_small.jpg%22+AND+date%3A%222011-02-25T19%3A03%3A07Z%22&wt=json&indent=true)
+   * Sample: [http://localhost...?q=url:"ar,com,adscl...09408_1_small.jpg AND date:"2011-02-25T19:03:07Z"...](http://localhost:8983/solr/cdx/select?q=url%3A%22ar%2Ccom%2Cadsclasificados%2Caimogasta)%2Fpublicacion%2Fimages%2F209408_1_small.jpg%22+AND+date%3A%222011-02-25T19%3A03%3A07Z%22&wt=json&indent=true)
 2. _The user selects one particular capture in the calendar:_ This relaxes timestamp-matching to the one closest in time: `query=url:"example.com/kittens.html" & sort=abs(sub(ms(2016-03-04T20:54:10Z), crawl_date)) asc` 
 3. _Get the best matching page when following a link:_ Same as above.
 4. _Get the best match for embedded resources:_ Same as above.
@@ -37,8 +37,8 @@ Interestingly enough, Solr seems to fit well into this. Extremely well, I would 
 14. _Bulk/batch requests:_ Solr 4 supports paging and Solr 5 supports streaming exports; see [Exporting Result sets](Bulk/batch requests). One aber dabei is that parallel requests of chunks is tricky. That might require some intermediate step where the cursorMarks are determined up front.
 15. _Lookup url with specific schema:_ A question of whether or not the schema is indexed.
 16. (W)ARC file management
-  a. _Identify the (W)ARC files which matches a query, returning a count of the query matches for each (W)ARC file:_ This can be handled by faceting: `query=url:example.com/kit* & facet=true & facet.field=ward & facec.limit=-1`.
-  b. _Given a (W)ARC file identifier, list the URLs it holds which match a set of criteria:_ This is a limiter: `query=url:example.com/kit* AND warc=myharvest20160304_2132.warc & fl=url`.
+   * _Identify the (W)ARC files which matches a query, returning a count of the query matches for each (W)ARC file:_ This can be handled by faceting: `query=url:example.com/kit* & facet=true & facet.field=ward & facec.limit=-1`.
+   * _Given a (W)ARC file identifier, list the URLs it holds which match a set of criteria:_ This is a limiter: `query=url:example.com/kit* AND warc=myharvest20160304_2132.warc & fl=url`.
 
 The only tricky one it #8, which either requires two extra fields (which takes up space) or a potentially very heavy regexp. Or maybe a third solution is better: SURT the URL and split it into domain and path, not indexing the full URL at all? So instead of `query=url:"example.org/kittens.html` it would be `query=domain:"org.example" AND path="kittens.html"`. But that would make simple lookups more expensive in terms of processing power.
 
@@ -54,7 +54,7 @@ SolrCloud makes it possible to treat different Solr indexes (shards) as a single
 2. Unpack Solr to a sub-folder named `solr` (the default name is solr-version, so rename that to just solr) alongside this README
 3. Start Solr with `solr/bin/solr start (visit http://localhost:8983/solr/#/ to check it works)
 4. Create a cdx collection with `solr/bin/solr create -c cdx -d config/`
-  a. A core named `cdx` should now be available from the admin interface (try refreshing the page in the browser)
+   * A core named `cdx` should now be available from the admin interface (try refreshing the page in the browser)
 
 ## Indexing
 
