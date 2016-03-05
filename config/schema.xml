@@ -30,13 +30,15 @@ CDX A b e a m s c k r V v D d g M n
 -->
 
 <schema name="example" version="1.5">
+   <field name="_version_" type="long" indexed="true" stored="true"/>
   <!-- The id field must be unique and should be resonably short. digest+timestamp is a possibility-->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" /> 
+  <uniqueKey>id</uniqueKey>
 
   <!-- A canonized url (SURT & normalised) -->
   <field name="url"    type="string" indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true" required="true"/>
   <!-- b date (tdate as it is often used with ranges) -->
-  <field name="tdate"  type="date"   indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true" required="true"/>
+  <field name="date"  type="tdate"   indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true" required="true"/>
   <!-- e IP -->
   <field name="ip"     type="int"    indexed="true" stored="true" omitNorms="true" multiValued="false" docValues="true"/>
   <!-- a original URL -->
