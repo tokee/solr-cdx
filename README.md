@@ -9,7 +9,24 @@ The current scope is to make a proof of concept: No real API is exposed and it i
 Feature tested with sample data from archive.org. Not scale tested!
 
 
-## So what is the idea?
+## Installation
+
+1. Download Solr at http://lucene.apache.org/solr/mirrors-solr-latest-redir.html
+2. Unpack Solr to a sub-folder named `solr` (the default name is solr-version, so rename that to just solr) alongside this README
+3. Start Solr with `solr/bin/solr start (visit http://localhost:8983/solr/#/ to check it works)
+4. Create a cdx collection with `solr/bin/solr create -c cdx -d config/`
+   * A core named `cdx` should now be available from the admin interface (try refreshing the page in the browser)
+
+## Indexing
+
+1. Download a CDX sample from https://archive.org/details/testWARCfiles (the first one from "WARC CDX INDEX FILES" makes the sample links in this README work)
+   * The first line should be ` CDX N b a m s k r M S V g` (check with `less file.cdx.gz | head -n 1`)
+2. Convert the samples to Solr-usable CSV-files with `cdx2cvs.sh WIDE*.cdx.gz`
+3. Post the generated CSV-files to Solr with `for CSV in *.csv; do curl "http://localhost:8983/solr/cdx/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done`
+   * Inspect the result by issuing a `*:*`-query in the Solr admin interface or call `curl "http://localhost:8983/solr/cdx/select?q=*%3A*&rows=1&wt=json&indent=true"` from the command line
+
+
+## So how does this work?
 [CDX-files](https://archive.org/web/researcher/cdx_file_format.php) are used for mapping URLs, timestamps and other meta-data to WARC filenames and offsets. They are also used for extracting some statistics.
 
 Seen from my point of view (I do a lot of search-stuff, primarily with Solr), there are three parts here
@@ -18,7 +35,7 @@ Seen from my point of view (I do a lot of search-stuff, primarily with Solr), th
 2. Optionally aggregate the response. This can be a simple count of matches. Or grouping by uniqueness (hash) or WARC file name. Or faceting on year or domain.
 3. Deliver the response. This can be a single WARC file name + offset. Or 10 billion URLs. Either paged in chunks or as a single stream of data.
 
-Interestingly enough, Solr seems to fit well into this. Extremely well, I would say, but then I am quite biased here. Let's pretend we have a (yet fictional) solr-cdx running and discuss the [CDX Server Requirements](https://github.com/iipc/openwayback/wiki/CDX-Server-requirements):
+Interestingly enough, Solr seems to fit well into this. Extremely well, I would say, but then I am quite biased here. With solr-cdx running, it is possible to step through the preliminary [CDX Server Requirements](https://github.com/iipc/openwayback/wiki/CDX-Server-requirements) and see how well it fits:
 
 1. _The user has a link to a particular version of a document:_ This is an exact lookup and can be handled with `query=url:"example.com/kittens.html" AND date:"2016-03-04T20:54:10Z"`.
    * Sample: [http://localhost...?q=url:"ar,com,adscl...09408_1_small.jpg AND date:"2011-02-25T19:03:07Z"...](http://localhost:8983/solr/cdx/select?q=url%3A%22ar%2Ccom%2Cadsclasificados%2Caimogasta%29%2Fpublicacion%2Fimages%2F209408_1_small.jpg%22+AND+date%3A%222011-02-25T19%3A03%3A07Z%22&wt=json&indent=true)
@@ -51,25 +68,12 @@ Interestingly enough, Solr seems to fit well into this. Extremely well, I would 
 
 The only tricky one it #8, which either requires two extra fields (which takes up space) or a potentially very heavy regexp. Or maybe a third solution is better: SURT the URL and split it into domain and path, not indexing the full URL at all? So instead of `query=url:"example.org/kittens.html` it would be `query=domain:"org.example" AND path="kittens.html"`. But that would make simple lookups more expensive in terms of processing power.
 
-### Other plus-points for Solr
+## Conclusion
+From a functional viewpoint, Solr passes the test. Everything on the (not complete) requirements list can be handled. A scale test is sorely needed though: What happens to performance with a real corpus and how much storage space does the index take?
+
+## Relevant plus-points for Solr
 Solr indexes can be updated iteratively: New CDX-data are simply added to the existing ones without any requirements of re-calculation of existing data or similar large overheads.
 
-SolrCloud makes it possible to treat different Solr indexes (shards) as a single one. Growing beyond a single machine is easy. By using custom routing, shards can be added (and removed) at will, which makes it possible to have "hot" shards where the new CDX-data goes and read-optimize the static structures of the older shards.
+SolrCloud makes it possible to treat different Solr indexes (shards) as a single one: Growing beyond a single machine is easy. By using custom routing, shards can be added (and removed) at will, which makes it possible to have "hot" shards where the new CDX-data goes and read-optimize the static structures of older shards.
 
-
-## Installation
-
-1. Download Solr at http://lucene.apache.org/solr/mirrors-solr-latest-redir.html
-2. Unpack Solr to a sub-folder named `solr` (the default name is solr-version, so rename that to just solr) alongside this README
-3. Start Solr with `solr/bin/solr start (visit http://localhost:8983/solr/#/ to check it works)
-4. Create a cdx collection with `solr/bin/solr create -c cdx -d config/`
-   * A core named `cdx` should now be available from the admin interface (try refreshing the page in the browser)
-
-## Indexing
-
-1. Download a CDX sample from https://archive.org/details/testWARCfiles (the first one from "WARC CDX INDEX FILES" makes the sample links in this README work)
-  a. The first line should be ` CDX N b a m s k r M S V g` (check with `less file.cdx.gz | head -n 1`)
-2. Convert the samples to Solr-usable CSV-files with `cdx2cvs.sh WIDE*.cdx.gz`
-3. Post the generated CSV-files to Solr with `for CSV in *.csv; do curl "http://localhost:8983/solr/cdx/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done`
-  a. Inspect the result by issuing a `*:*`-query in the Solr admin interface or call `curl "http://localhost:8983/solr/cdx/select?q=*%3A*&rows=1&wt=json&indent=true"` from the command line
 
