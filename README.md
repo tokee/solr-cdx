@@ -6,7 +6,7 @@ The current scope is to make a proof of concept: No real API is exposed and it i
 
 
 ## Progress
-Non-tested first version of a CDX Server compliant schema.xml for Solr.
+Feature tested with sample data from archive.org. Not scale tested!
 
 
 ## So what is the idea?
