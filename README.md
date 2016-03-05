@@ -36,7 +36,7 @@ Interestingly enough, Solr seems to fit well into this. Extremely well, I would 
 14. _Bulk/batch requests:_ Solr 4 supports paging and Solr 5 supports streaming exports; see [Exporting Result sets](Bulk/batch requests). One aber dabei is that parallel requests of chunks is tricky. That might require some intermediate step where the cursorMarks are determined up front.
 15. _Lookup url with specific schema:_ A question of whether or not the schema is indexed.
 16. (W)ARC file management
-  a. _Identify the (W)ARC files which <matches a query>, returning a count of the <query matches> for each (W)ARC file:_ This can be handled by faceting: `query=url:example.com/kit* & facet=true & facet.field=ward & facec.limit=-1`.
+  a. _Identify the (W)ARC files which matches a query, returning a count of the query matches for each (W)ARC file:_ This can be handled by faceting: `query=url:example.com/kit* & facet=true & facet.field=ward & facec.limit=-1`.
   b. _Given a (W)ARC file identifier, list the URLs it holds which match a set of criteria:_ This is a limiter: `query=url:example.com/kit* AND warc=myharvest20160304_2132.warc & fl=url`.
 
 The only tricky one it #8, which either requires two extra fields (which takes up space) or a potentially very heavy regexp. Or maybe a third solution is better: SURT the URL and split it into domain and path, not indexing the full URL at all? So instead of `query=url:"example.org/kittens.html` it would be `query=domain:"org.example" AND path="kittens.html"`. But that would make simple lookups more expensive in terms of processing power.
@@ -50,7 +50,7 @@ SolrCloud makes it possible to treat different Solr indexes (shards) as a single
 ## Installation
 
 1. Download Solr at http://lucene.apache.org/solr/mirrors-solr-latest-redir.html
-2. Unpack Solr to a sub-folder named `solr` (the default name is solr-<version>, so rename that to just solr) alongside this README
+2. Unpack Solr to a sub-folder named `solr` (the default name is solr-version, so rename that to just solr) alongside this README
 3. Start Solr with `solr/bin/solr start (visit http://localhost:8983/solr/#/ to check it works)
 4. Create a cdx collection with `solr/bin/solr create -c cdx -d config/`
   a. A core named `cdx` should now be available from the admin interface (try refreshing the page in the browser)
@@ -58,7 +58,7 @@ SolrCloud makes it possible to treat different Solr indexes (shards) as a single
 ## Indexing
 
 1. Download a CDX sample from https://archive.org/details/testWARCfiles (one or more of the "WARC CDX INDEX FILES")
-  a. The first line should be ` CDX N b a m s k r M S V g` (check with `less <file> | head -n 1`)
+  a. The first line should be ` CDX N b a m s k r M S V g` (check with `less file.cdx.gz | head -n 1`)
 2. Convert the samples to Solr-usable CSV-files with `cdx2cvs.sh WIDE*.cdx.gz`
 3. Post the generated CSV-files to Solr with `for CSV in *.csv; do curl "http://localhost:8983/solr/cdx/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done`
   a. Inspect the result by issuing a `*:*`-query in the Solr admin interface or call `curl "http://localhost:8983/solr/cdx/select?q=*%3A*&rows=1&wt=json&indent=true"` from the command line
