@@ -11,3 +11,7 @@ solr
 *.csv
 *.cdx.gz
 *~
+*.iml
+/nohup.out
+/.idea/
+logs
