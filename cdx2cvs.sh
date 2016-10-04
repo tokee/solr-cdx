@@ -1,7 +1,7 @@
 #!/bin/bash
 
 EXPECTED_HEADER=" CDX N b a m s k r M S V g"
-CSV_HEADER="id,url,date,ourl,mime,response,newdigest,redirect,offset,arc,domain,path"
+CSV_HEADER="id,url,date,ourl,mime,response,newdigest,redirect,offset,arc,sdomain,path"
 
 function ispresentc() {
     if [ "-" != "$1" -a "." != ".$1" ]; then
@@ -35,7 +35,7 @@ function convert_csv() {
     while IFS= read -r LINE; do
         # In:   N b a m s k r M S V g
         # Solr: A b e a m s c k r V v D d g M n
-        # Mix:  N b a m s k r V g domain path
+        # Mix:  N b a m s k r V g sdomain path
         # Name: url,date,ourl,mime,response,newdigest,redirect,offset,arc 
 
         # http://stackoverflow.com/questions/1469849/how-to-split-one-string-into-multiple-strings-separated-by-at-least-one-space-in
@@ -55,7 +55,7 @@ function convert_csv() {
         ispresentc ${TOKENS[9]} >> "$CSV" # V
         ispresentc ${TOKENS[10]} >> "$CSV" #G
 
-        echo -n ${TOKENS[0]} | cut -d\) -f1 | tr -d '\n' >> "$CSV"  # domain
+        echo -n ${TOKENS[0]} | cut -d\) -f1 | tr -d '\n' >> "$CSV"  # sdomain
         echo -n "," >> "$CSV"
         local PATHF=`echo -n ${TOKENS[0]} | cut -d\) -f2`
         echo -n ${PATHF:1} >> "$CSV" # path 
