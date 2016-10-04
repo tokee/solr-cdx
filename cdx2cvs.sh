@@ -41,7 +41,7 @@ function convert_csv() {
         # http://stackoverflow.com/questions/1469849/how-to-split-one-string-into-multiple-strings-separated-by-at-least-one-space-in
         IFS=' ' read -ra TOKENS < <(echo "$LINE")
         # id=url+date
-        ispresent ${TOKENS[0]} >> "$CSV"
+        ispresent ${TOKENS[5]} >> "$CSV"
         ispresentc ${TOKENS[1]} >> "$CSV"
 
         ispresentc ${TOKENS[0]} >> "$CSV" # N
