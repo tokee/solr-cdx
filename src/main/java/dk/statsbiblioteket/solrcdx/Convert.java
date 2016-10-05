@@ -24,6 +24,15 @@ import java.nio.file.Paths;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * Special-purpose class for converting CDX-files of the exact format {@link #CDX_HEADER} into CSV-files of the
+ * format {@link #CSV_HEADER}, intended for indexing to a Solr-collection using the matching schema.xml from the
+ * solr-cdx-project.
+ * Conversion speed is ~3000 entries/second or ~10M entries/hour using a single CPU core.
+ */
+// TODO: Accept a wider range of CDX-variants
+// TODO: Massage the URL based on the original URL, instead of using the provided CDX-N, to ensure uniform entries
+// TODO: Use multiple threads if there are multiple input files (up to a given limit)
 public class Convert {
     private static Log log = LogFactory.getLog(Convert.class);
 
@@ -67,7 +76,6 @@ public class Convert {
             String line;
             while ((line = cdxReader.readLine()) != null) {
                 entries++;
-                // TODO: Create a flexible reader with minimum requirements and maximum support
                 if (entries == 0 && !CDX_HEADER.equals(line)) {
                     error(String.format(
                             "The current implementation only works with CDX files with the exact format '%s', " +
@@ -97,6 +105,22 @@ public class Convert {
             return "";
         }
         final String[] split = PSPLIT.split(tokens[0], 2);
+
+        int response;
+        try {
+            response = Integer.parseInt(tokens[4]);
+        } catch (NumberFormatException e) {
+            log.debug("The response '" + tokens[4] + "' was not an integer. Skipping line " + cdxLine);
+            return "";
+        }
+        long offset;
+        try {
+            offset = Long.parseLong(tokens[9]);
+        } catch (NumberFormatException e) {
+            log.debug("The offset '" + tokens[9] + "' was not a long. Skipping line " + cdxLine);
+            return "";
+        }
+
         // id,url,date,ourl,mime,response,newdigest,redirect,offset,arc,sdomain,path
         // We choose the ID to be digest+timestamp as that is the shortest near-guaranteed unique ID we can construct
         return z(tokens[5]+ tokens[1]) + "," +       // id:       YN4T25EJJQ4FKAHRXN7TDZF2AOQ43D2X20110225190307
@@ -104,11 +128,11 @@ public class Convert {
                toDate(tokens[1]) + "," +             // date:     20110225190307
                z(tokens[2]) + "," +                  // ourl:     http://aimogasta.adsclasificados.com.ar/Publicacion/Images/209408_1_small.jpg
                z(tokens[3]) + "," +                  // mime:     image/jpeg
-               z(tokens[4]) + "," +                  // response: 200
+               response + "," +                      // response: 200
                z(tokens[5]) + "," +                  // newdigest: YN4T25EJJQ4FKAHRXN7TDZF2AOQ43D2X
                z(tokens[6]) + "," +                  // redirect: -
                // t7 t8: - 2505
-               z(tokens[9]) + "," +                  // offset:   271488344
+               offset + "," +                        // offset:   271488344
                z(tokens[10]) + "," +                 // arc:      testWARCfiles/WIDE-20110225183219005-04371-13730~crawl301.us.archive.org~9443.warc.gz
                z(split[0]) + "," +                   // sdomain:  ar,com,adsclasificados,aimogasta
                (split.length == 1 ? "" : z(split[1])); // path:   publicacion/images/209408_1_small.jpg
