@@ -32,7 +32,7 @@ CDX A b e a m s c k r V v D d g M n
 <schema name="cdx" version="1.5">
     <!--
      The comment-line below is used by upload_and_link_config.sh
-    config-version: 0.2
+    config-version: 0.3
     -->
 
     <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>

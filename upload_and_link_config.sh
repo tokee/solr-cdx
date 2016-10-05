@@ -7,14 +7,14 @@ cd "$(dirname "$0")"
 #
 
 SHARDS=1
-COLLECTION="cdx6"
+COLLECTION="cdx8"
 
 SOLR_SCRIPTS=/home/te/tmp/sumfresh/sites/aviser/solrcloud/solr/machine1/server/scripts
 SOLR="localhost:50001"
 ZOOKEEPER="localhost:2181"
    
 CONFIG_VERSION=`cat config/schema.xml | grep -o "config-version: .*" | cut -d\  -f2`
-CONFIG="${COLLECTION}_conf_${CONFIG_VERSION}"
+CONFIG="cdx_conf_${CONFIG_VERSION}"
 
 echo "Adding config $CONFIG to ZooKeeper"
 $SOLR_SCRIPTS/cloud-scripts/zkcli.sh -zkhost $ZOOKEEPER -cmd upconfig -confname $CONFIG -confdir config/

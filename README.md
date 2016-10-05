@@ -1,8 +1,8 @@
 # solr-cdx
 
-Solr schema and helper bash scripts for providing CDX lookups using Solr.
+Solr schema and helper tools for providing CDX lookups using Solr.
 
-The current scope is to make a proof of concept: No real API is exposed and it is only possible to handle up to 2 billion CDX entries.
+The current scope is to make a proof of concept: No real API is exposed.
 
 
 ## Progress
@@ -56,8 +56,9 @@ Solr indexes can be updated iteratively: New CDX-data are simply added to the ex
 
 SolrCloud makes it possible to treat different Solr indexes (shards) as a single one. Growing beyond a single machine is easy. By using custom routing, shards can be added (and removed) at will, which makes it possible to have "hot" shards where the new CDX-data goes and read-optimize the static structures of the older shards.
 
+## Solr installation
 
-## Installation
+### Standalone (max 2 billion entries)
 
 1. Download Solr at http://lucene.apache.org/solr/mirrors-solr-latest-redir.html
 2. Unpack Solr to a sub-folder named `solr` (the default name is solr-version, so rename that to just solr) alongside this README
@@ -65,11 +66,18 @@ SolrCloud makes it possible to treat different Solr indexes (shards) as a single
 4. Create a cdx collection with `solr/bin/solr create -c cdx -d config/`
    * A core named `cdx` should now be available from the admin interface (try refreshing the page in the browser)
 
+### SolrCloud (no definite max entries)
+
+1. Download Solr at http://lucene.apache.org/solr/mirrors-solr-latest-redir.html
+2. Follow the instructions at https://cwiki.apache.org/confluence/display/solr/Getting+Started+with+SolrCloud to get a cloud running
+3. Modify and use the script `upload_and_link_config.sh` to create a `cdx`-collection in the cloud
+
 ## Indexing
 
+0. Build the CDX to Solr CSV converter with `mvn package`
 1. Download a CDX sample from https://archive.org/details/testWARCfiles (the first one from "WARC CDX INDEX FILES" makes the sample links in this README work)
   a. The first line should be ` CDX N b a m s k r M S V g` (check with `less file.cdx.gz | head -n 1`)
-2. Convert the samples to Solr-usable CSV-files with `cdx2cvs.sh WIDE*.cdx.gz`
-3. Post the generated CSV-files to Solr with `for CSV in *.csv; do curl "http://localhost:8983/solr/cdx/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done`
+2. Convert the samples to Solr-usable CSV-files with `java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar WIDE*.cdx.gz`
+3. Post the generated CSV-files to Solr with ``for CSV in *.csv; do curl "http://localhost:8983/solr/cdx/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done``
   a. Inspect the result by issuing a `*:*`-query in the Solr admin interface or call `curl "http://localhost:8983/solr/cdx/select?q=*%3A*&rows=1&wt=json&indent=true"` from the command line
 
