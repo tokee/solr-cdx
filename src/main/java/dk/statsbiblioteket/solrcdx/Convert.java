@@ -88,7 +88,7 @@ public class Convert {
     }
 
     private final static Pattern SSPLIT = Pattern.compile(" ");
-    private final static Pattern PSPLIT = Pattern.compile("\\)/");
+    private final static Pattern PSPLIT = Pattern.compile("\\)?/");
     public static String convertLine(String cdxLine) {
         // ar,com,adsclasificados,aimogasta)/publicacion/images/209408_1_small.jpg 20110225190307 http://aimogasta.adsclasificados.com.ar/Publicacion/Images/209408_1_small.jpg image/jpeg 200 YN4T25EJJQ4FKAHRXN7TDZF2AOQ43D2X - - 2505 271488344 testWARCfiles/WIDE-20110225183219005-04371-13730~crawl301.us.archive.org~9443.warc.gz
         String tokens[] = SSPLIT.split(cdxLine);
@@ -120,7 +120,7 @@ public class Convert {
     }
 
     private static String z(String s) {
-        return "".equals(s) || "-".equals(s) ? "" : s.replace(",", "\\,");
+        return "".equals(s) || "-".equals(s) ? "" : s.replace("\\", "\\\\").replace(",", "\\,");
     }
 
     private static void error(String message) {
