@@ -28,7 +28,8 @@ import java.util.zip.GZIPInputStream;
  * Special-purpose class for converting CDX-files of the exact format {@link #CDX_HEADER} into CSV-files of the
  * format {@link #CSV_HEADER}, intended for indexing to a Solr-collection using the matching schema.xml from the
  * solr-cdx-project.
- * Conversion speed is ~3000 entries/second or ~10M entries/hour using a single CPU core.
+ * Conversion speed is ~3K entries/second or ~10M entries/hour using a single CPU core.
+ * Index speed to a single shard is ~20K entries/s or ~70M entries/hour using a single CPU core.
  */
 // TODO: Accept a wider range of CDX-variants
 // TODO: Massage the URL based on the original URL, instead of using the provided CDX-N, to ensure uniform entries
@@ -39,6 +40,10 @@ public class Convert {
     public static void main(String[] args) throws IOException {
         if (args.length == 0 || "-h".equals(args[0])) {
             usage();
+            return;
+        }
+        if (args[0].startsWith("-s")) { // Quite a hack to have this at the converter. Consider using a Controller
+            Server.main(new String[0]);
             return;
         }
         for (String arg: args) {
@@ -102,6 +107,9 @@ public class Convert {
 
     private final static Pattern SSPLIT = Pattern.compile(" ");
     private final static Pattern PSPLIT = Pattern.compile("\\)?/");
+    public static String convertLine(String cdxLine) {
+        return convertLine(Paths.get("NA"), cdxLine);
+    }
     public static String convertLine(Path cdxFile, String cdxLine) {
         // ar,com,adsclasificados,aimogasta)/publicacion/images/209408_1_small.jpg 20110225190307 http://aimogasta.adsclasificados.com.ar/Publicacion/Images/209408_1_small.jpg image/jpeg 200 YN4T25EJJQ4FKAHRXN7TDZF2AOQ43D2X - - 2505 271488344 testWARCfiles/WIDE-20110225183219005-04371-13730~crawl301.us.archive.org~9443.warc.gz
         String tokens[] = SSPLIT.split(cdxLine);
@@ -138,6 +146,7 @@ public class Convert {
             return "";
         }
 
+        // TODO: Use a reusable StringBuilder instead of String concatenation
         // id,url,date,ourl,mime,response,newdigest,redirect,offset,arc,sdomain,path
         // We choose the ID to be digest+timestamp as that is the shortest near-guaranteed unique ID we can construct
         return z(tokens[5]+ tokens[1]) + "," +       // id:       YN4T25EJJQ4FKAHRXN7TDZF2AOQ43D2X20110225190307
@@ -160,6 +169,7 @@ public class Convert {
                cdxDate.substring(8, 10) + ":" + cdxDate.substring(10, 12) + ":" + cdxDate.substring(12, 14) + "Z";
     }
 
+    // TODO: Hotspot during conversion. Could the replace be more efficient with a simple charAt(i)-check?
     private static String z(String s) {
         return "".equals(s) || "-".equals(s) ? "" : s.replace("\\", "\\\\").replace(",", "\\,");
     }
@@ -175,7 +185,10 @@ public class Convert {
     }
 
     private static void usage() {
-        System.out.println("CDX->CSV Convert");
-        System.out.println("Usage: java -jar solrcdx.jar cdx-file*");
+        try {
+            System.out.println(Util.fetchExpandedString("usage.txt"));
+        } catch (IOException e) {
+            System.err.println("Internal error: Unable to fetch 'usage.txt'\n" + e.getMessage());
+        }
     }
 }

@@ -5,7 +5,7 @@ Solr schema and helper tools for providing CDX lookups using Solr.
 ## Status and Limitations
 
  * The current scope is proof of concept
- * There is no CDX Server API, so solr-cdx cannot be used as a drop-in replacement
+ * CDX Server API-support is extremely preliminary
  * Feature tested with sample data from archive.org and 20M CDX-entries from the Danish Net Archive
  * Not scale tested
 
@@ -76,12 +76,22 @@ The only tricky one it #8, which either requires two extra fields (which takes u
 
 ## Indexing
 
-0. Build the CDX to Solr CSV converter with `mvn package`
+0. Build solr-cdx with `mvn package`
 1. Download a CDX sample from https://archive.org/details/testWARCfiles (the first one from "WARC CDX INDEX FILES" makes the sample links in this README work)
   a. The first line should be ` CDX N b a m s k r M S V g` (check with `less file.cdx.gz | head -n 1`)
 2. Convert the samples to Solr-usable CSV-files with `java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar WIDE*.cdx.gz`
 3. Post the generated CSV-files to Solr with ``for CSV in *.csv; do curl "http://localhost:8983/solr/cdx/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done``
   a. Inspect the result by issuing a `*:*`-query in the Solr admin interface or call `curl "http://localhost:8983/solr/cdx/select?q=*%3A*&rows=1&wt=json&indent=true"` from the command line
+
+## Using solr-cdx as a CDX Server
+
+One step beyond "Not implemented yet".
+
+ 0. Build solr-cdx with `mvn package`
+ 1. Copy `src/main/resources/solrcdx.default.properties` to `solrcdx.properties` in the solr-cdx checkout-folder
+  a. Adjust the 
+ Start the server with `java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar WIDE*.cdx.gz`  
+
 
 ## See also
 

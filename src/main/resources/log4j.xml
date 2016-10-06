@@ -11,18 +11,18 @@
 
     <appender name="FULL_LOG" class="org.apache.log4j.RollingFileAppender">
         <param name="Threshold" value="DEBUG"/>
-        <param name="File" value="target/log/nrtmosaic.log"/>
+        <param name="File" value="logs/solrcdx.log"/>
         <param name="Append" value="true"/>
-        <param name="MaxFileSize" value="100MB"/>
-        <param name="MaxBackupIndex" value="1"/>
+        <param name="MaxFileSize" value="10MB"/>
+        <param name="MaxBackupIndex" value="3"/>
         <layout class="org.apache.log4j.PatternLayout">
             <param name="ConversionPattern" value="%-5p [%t] [%d] [%c] %m%n"/>
         </layout>
     </appender>
 
     <root>
-        <level value="DEBUG" />
-        <appender-ref ref="CONSOLE" />
+        <level value="INFO" />
+        <appender-ref ref="FULL_LOG" />
     </root>
 
 </log4j:configuration>

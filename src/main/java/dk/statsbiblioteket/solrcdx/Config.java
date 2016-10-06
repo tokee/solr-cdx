@@ -18,11 +18,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 
 public class Config {
@@ -49,7 +45,7 @@ public class Config {
         }
         home = buildHome;
 
-        URL urlD = resolveURL(DEFAULT_PROPS);
+        URL urlD = Util.resolveURL(DEFAULT_PROPS);
         Properties confL = null;
         if (urlD == null) {
             log.info("No default properties " + DEFAULT_PROPS + " found. Attempting override properties");
@@ -68,7 +64,7 @@ public class Config {
         }
 
         log.debug("Attempting load of override properties from " + buildHome + PROPS);
-        URL urlO = resolveURL(buildHome + PROPS);
+        URL urlO = Util.resolveURL(buildHome + PROPS);
         if (urlO == null) {
             if (confL == null) {
                 String message = "Neither " + DEFAULT_PROPS + " nor " + buildHome + PROPS + " could be located";
@@ -104,7 +100,7 @@ public class Config {
         return Long.parseLong(conf.getProperty(key));
     }
     public static String getString(String key) {
-        return expand(conf.getProperty(key));
+        return conf.getProperty(key);
     }
     public static Boolean getBool(String key) {
         return Boolean.parseBoolean(conf.getProperty(key));
@@ -113,34 +109,4 @@ public class Config {
         return Double.parseDouble(conf.getProperty(key));
     }
 
-    /**
-     * Expand selected environment variables in the given String. Currently the list is {@link #HOME_KEY}.
-     * Expansion is "smart", so "${solrcdx.home}subfolder" and "${solrcdx.home}/subfolder" are both expanded
-     * to "thespecifiedhome/subfolder".
-     */
-    public static String expand(String str) {
-        return str == null ? null : str.replaceAll("[$][{]solrcdx.home[}]/?", home);
-    }
-
-    public static URL resolveURL(String resource) {
-        try {
-            Path file = Paths.get(resource);
-            if (Files.exists(file)) {
-                return file.toUri().toURL();
-            }
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Exception resolving '" + resource + "' as file", e);
-        }
-
-        URL url = Thread.currentThread().getContextClassLoader().getResource(resource);
-        if (url != null) {
-            return url;
-        }
-
-        try {
-            return new URL(resource);
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("Exception resolving '" + resource + "' as URL", e);
-        }
-    }
 }
