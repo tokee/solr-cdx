@@ -25,6 +25,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,4 +104,18 @@ public class Util {
         matcher.appendTail(expanded);
         return expanded.toString();
     }
+    // https://lucene.apache.org/core/2_9_4/queryparsersyntax.html#Escaping%20Special%20Characters
+    // + - && || ! ( ) { } [ ] ^ " ~ * ? : \
+    public static String solrEscape(String str) {
+        StringBuilder sb = new StringBuilder(str.length()+10);
+        for (int i = 0 ; i < str.length() ; i++) {
+            if (ESCAPEES.contains(str.charAt(i))) {
+                sb.append("\\");
+            }
+            sb.append(str.charAt(i));
+        }
+        return sb.toString();
+    }
+    private static final Set<Character> ESCAPEES = new HashSet<>(Arrays.asList(
+            '+', '-', '&', '|', '!', '(', ')', '{', '}', '[', ']', '^', '"', '~', '*', '?', ':', '\\'));
 }

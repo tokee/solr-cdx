@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.*;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -61,37 +62,63 @@ public class Server implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         Map<String, String> params = getParams(exchange);
         // https://archive.org/web/researcher/cdx_file_format.php
-        if (params.containsKey("url")) {
-            handleSimpleURL(exchange, params);
+        // https://github.com/internetarchive/wayback/blob/master/wayback-cdx-server/README.md
+        if (exchange.getRequestURI().toString().startsWith("/cdx/search")) {
+            handleSearch(exchange, params);
         } else {
             sendResponse(exchange, 200, BASE);
         }
     }
 
-    private void handleSimpleURL(HttpExchange exchange, Map<String, String> params) throws IOException {
-        String url = URLDecoder.decode(params.get("url"), "utf-8");
-        log.debug("simpleURL(url='" + url + "')");
-        handleSolr(exchange, "q", "ourl:\"" + solrEscape(url) + "\"");
-        sendResponse(exchange, 200, "Simple URL: " + url);
+    private void handleSearch(HttpExchange exchange, Map<String, String> userParams) throws IOException {
+        if (!userParams.containsKey("url")) {
+            sendResponse(exchange, 200, BASE);
+            return;
+        }
+
+        // Defaults
+        Map<String, String> solrParams = new HashMap<>();
+        solrParams.put("fl", Config.getString("solr.fl"));
+        solrParams.put("rows", Integer.toString(Config.getInt("solr.rows")));
+        solrParams.put("wt", "csv");
+
+        // User-supplied
+        for (Map.Entry<String, String> entry: userParams.entrySet()) {
+            switch (entry.getKey()) {
+                case "url": {
+                    String url = URLDecoder.decode(entry.getValue(), "utf-8");
+                    solrParams.put("q", "ourl:" + Util.solrEscape(url));
+                    break;
+                }
+                case "fl": {
+                    solrParams.put("fl", entry.getValue());
+                    break;
+                }
+                case "limit": {
+                    solrParams.put("rows", entry.getValue());
+                    break;
+                }
+                case "offset": {
+                    solrParams.put("start", entry.getValue());
+                    break;
+                }
+                default: log.warn("Unknown parameter key '" + entry.getKey() + "'");
+            }
+        }
+
+        pipeURL(exchange, new URL(SOLR_SELECT + toURL(solrParams)));
+        //http://localhost:50001/solr/cdx9/select?fl=ourl&indent=on&q=ourl:%22http://ing.dk/rank/rtx_telecom?nocache=1?nocache=1?nocache=1%22&wt=csv
     }
 
-    final String SOLR_DEFAULTS = "fl=" + Config.getString("solr.fl") +
-                                 "&rows=" + Config.getInt("solr.rows") +
-                                 "&wt=csv";
-    private void handleSolr(HttpExchange exchange, String... keyValues) throws IOException {
-        if (keyValues.length%2 != 0) {
-            throw new IllegalArgumentException("There was an uneven number of key-value entries: " + keyValues.length);
-        }
-        StringBuilder params = new StringBuilder();
-        params.append(SOLR_DEFAULTS);
-        for (int i = 0 ; i < keyValues.length ; i+=2) {
-            if (params.length() != 0) {
-                params.append("&");
+    private String toURL(Map<String, String> solrParams) throws UnsupportedEncodingException {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, String> entry: solrParams.entrySet()) {
+            if (sb.length() != 0) {
+                sb.append("&");
             }
-            params.append(keyValues[0]).append("=").append(URLEncoder.encode(keyValues[1], "utf-8"));
+            sb.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue(), "utf-8"));
         }
-        pipeURL(exchange, new URL(SOLR_SELECT + params));
-        //http://localhost:50001/solr/cdx9/select?fl=ourl&indent=on&q=ourl:%22http://ing.dk/rank/rtx_telecom?nocache=1?nocache=1?nocache=1%22&wt=csv
+        return sb.toString();
     }
 
     private void pipeURL(HttpExchange exchange, URL url) throws IOException {
