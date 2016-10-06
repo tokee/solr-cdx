@@ -62,6 +62,11 @@ public class Convert {
             error("The CDX file '" + cdx + "' does not exist");
             return;
         }
+        if (Files.exists(csv)) {
+            info("Skipping '" + cdx + "' as the destination file '" + csv + "' aready exists");
+            return;
+        }
+
         log.debug("Starting conversion of '" + cdx + "' -> '" + csv + "'");
         final long startTime = System.nanoTime();
         try (FileInputStream fis = new FileInputStream(cdx.toFile());
@@ -82,7 +87,7 @@ public class Convert {
                             "but the format for the file '%s' was '%s'", CDX_HEADER, cdx, line));
                     return;
                 }
-                String csvLine = convertLine(line);
+                String csvLine = convertLine(cdx, line);
                 if (!"".equals(csvLine)) {
                     csvWriter.write(csvLine);
                     csvWriter.write("\n"); // Don't use newline() as we always want \n
@@ -97,27 +102,39 @@ public class Convert {
 
     private final static Pattern SSPLIT = Pattern.compile(" ");
     private final static Pattern PSPLIT = Pattern.compile("\\)?/");
-    public static String convertLine(String cdxLine) {
+    public static String convertLine(Path cdxFile, String cdxLine) {
         // ar,com,adsclasificados,aimogasta)/publicacion/images/209408_1_small.jpg 20110225190307 http://aimogasta.adsclasificados.com.ar/Publicacion/Images/209408_1_small.jpg image/jpeg 200 YN4T25EJJQ4FKAHRXN7TDZF2AOQ43D2X - - 2505 271488344 testWARCfiles/WIDE-20110225183219005-04371-13730~crawl301.us.archive.org~9443.warc.gz
         String tokens[] = SSPLIT.split(cdxLine);
         if (tokens.length != CDX_COLUMN_COUNT) {
-            log.debug("The CDX line '" + cdxLine + "' did not conform to the header '" + CDX_HEADER + "'");
+            if (CDX_HEADER.equals(cdxLine)) { // Duplicate header (probably due to concatenated CDX files)
+                log.debug("Duplicate header line encountered in CDX-file '" + cdxFile + "'");
+                return "";
+            }
+            log.debug("The line '" + cdxLine + "' in CDX-file '" + cdxFile + "' did not conform to the header '" +
+                      CDX_HEADER + "'");
             return "";
         }
         final String[] split = PSPLIT.split(tokens[0], 2);
 
         int response;
         try {
+            // DNS-lookups does not provide a response code
             response = Integer.parseInt(tokens[4]);
         } catch (NumberFormatException e) {
-            log.debug("The response '" + tokens[4] + "' was not an integer. Skipping line " + cdxLine);
-            return "";
+            if (!("-".equals(tokens[4]) || "TBD".equals(tokens[4]))) {
+                log.debug("The response code '" + tokens[4] + "' was not an integer. Skipping line " + cdxLine +
+                          " from CDX file '" + cdxFile + "'");
+                return "";
+            }
+            response = -1; // TODO: What to specify here?
         }
         long offset;
         try {
             offset = Long.parseLong(tokens[9]);
         } catch (NumberFormatException e) {
-            log.debug("The offset '" + tokens[9] + "' was not a long. Skipping line " + cdxLine);
+            // No fallback here as entries without offsets are unusable
+            log.debug("The offset '" + tokens[9] + "' was not a long. Skipping line " + cdxLine +
+                      " from CDX file '" + cdxFile + "'");
             return "";
         }
 

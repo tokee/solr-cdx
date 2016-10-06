@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 #
 
 SHARDS=1
-COLLECTION="cdx8"
+COLLECTION="cdxa"
 
 SOLR_SCRIPTS=/home/te/tmp/sumfresh/sites/aviser/solrcloud/solr/machine1/server/scripts
 SOLR="localhost:50001"

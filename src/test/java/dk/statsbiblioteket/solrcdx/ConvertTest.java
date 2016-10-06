@@ -91,9 +91,4 @@ public class ConvertTest {
                      EXPECTED_MESSY.replaceAll("[^\\\\],", "\n"),
                      Convert.convertLine(SAMPLE_MESSY).replaceAll("[^\\\\],", "\n"));
     }
-
-    @Test
-    public void debug() {
-        System.out.println("?ixv,\\,tyeh[(qhhgtkf?36587(uvkf?9(u".replace("\\", "***\\\\***").replace(",", "\\,"));
-    }
 }

@@ -3,6 +3,10 @@
 EXPECTED_HEADER=" CDX N b a m s k r M S V g"
 CSV_HEADER="id,url,date,ourl,mime,response,newdigest,redirect,offset,arc,sdomain,path"
 
+>&2 echo "Warning: This script has been deprecated as it is very slow"
+>&2 echo "and does not escape backslashes in URLs."
+>&2 echo "Consult README.md for a Java alternative."
+
 function ispresentc() {
     if [ "-" != "$1" -a "." != ".$1" ]; then
         echo -n "$1,"
