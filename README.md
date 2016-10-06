@@ -2,14 +2,21 @@
 
 Solr schema and helper tools for providing CDX lookups using Solr.
 
-The current scope is to make a proof of concept: No real API is exposed.
+## Status and Limitations
 
+ * The current scope is proof of concept
+ * There is no CDX Server API, so solr-cdx cannot be used as a drop-in replacement
+ * Feature tested with sample data from archive.org and 20M CDX-entries from the Danish Net Archive
+ * Not scale tested
 
-## Progress
-Feature tested with sample data from archive.org. Not scale tested!
+### Standard Solr goodies
 
+ * Iterative updates: New CDX-data are simply added to the existing ones without any requirements of re-calculation of existing data or similar large overheads
+ * Sharding: SolrCloud makes it possible to treat different Solr indexes (shards) as a single one. Growing beyond a single machine is easy
+ * Replication: Redundancy and throughput scaling is build into SolrCloud 
 
 ## So what is the idea?
+
 [CDX-files](https://archive.org/web/researcher/cdx_file_format.php) are used for mapping URLs, timestamps and other meta-data to WARC filenames and offsets. They are also used for extracting some statistics.
 
 Seen from my point of view (I do a lot of search-stuff, primarily with Solr), there are three parts here
@@ -41,7 +48,7 @@ Interestingly enough, Solr seems to fit well into this. Extremely well, I would 
 11. _User requests/searchers for an exact url with a partial timestamp, expecting to get a summary of captures for the url over time:_ This is the same as the range-limit in #9, only with finer granularity.
 12. _Get a random page within a partial timestamp:_ Select a random point in time within the wanted range and return the resource harvested closest to that time, basically combining #2 and #9.
 13. _Get number of snapshots taken for a date range:_ This is the same as #9, just with a hitcount and no data returned: `query=url:"example.com/kittens.html AND timestamp:["2014-01-01T00:00:00Z" TO 2015-12-31T23:59:59Z"" & rows=0`.
-14. _Bulk/batch requests:_ Solr 4 supports paging and Solr 5 supports streaming exports; see [Exporting Result sets](Bulk/batch requests). One aber dabei is that parallel requests of chunks is tricky. That might require some intermediate step where the cursorMarks are determined up front.
+14. _Bulk/batch requests:_ Solr 4 supports paging and Solr 5+ supports streaming exports; see [Exporting Result sets](Bulk/batch requests). One aber dabei is that parallel requests of chunks is tricky. That might require some intermediate step where the cursorMarks are determined up front.
 15. _Lookup url with specific schema:_ A question of whether or not the schema is indexed.
 16. (W)ARC file management
    * _Identify the (W)ARC files which matches a query, returning a count of the query matches for each (W)ARC file:_ This can be handled by faceting: `query=url:example.com/kit* & facet=true & facet.field=arc & facec.limit=-1`.
@@ -50,11 +57,6 @@ Interestingly enough, Solr seems to fit well into this. Extremely well, I would 
       * Sample: [http://localhost...?q=sdomain:ar,com,adsclasificados,* AND arc:"testWARCfiles/WIDE-201102...43.warc.gz"&rows=0&facet=true&facet.field=arc&facet.limit=-1](http://localhost:8983/solr/cdx/select?q=sdomain%3Aar%2Ccom%2Cadsclasificados%2C*+AND+arc%3A%22testWARCfiles/WIDE-20110225183219005-04371-13730~crawl301.us.archive.org~9443.warc.gz%22&sort=date+asc&wt=json&indent=true&fl=url)
 
 The only tricky one it #8, which either requires two extra fields (which takes up space) or a potentially very heavy regexp. Or maybe a third solution is better: SURT the URL and split it into domain and path, not indexing the full URL at all? So instead of `query=url:"example.org/kittens.html` it would be `query=domain:"org.example" AND path="kittens.html"`. But that would make simple lookups more expensive in terms of processing power.
-
-### Other plus-points for Solr
-Solr indexes can be updated iteratively: New CDX-data are simply added to the existing ones without any requirements of re-calculation of existing data or similar large overheads.
-
-SolrCloud makes it possible to treat different Solr indexes (shards) as a single one. Growing beyond a single machine is easy. By using custom routing, shards can be added (and removed) at will, which makes it possible to have "hot" shards where the new CDX-data goes and read-optimize the static structures of the older shards.
 
 ## Solr installation
 
@@ -81,3 +83,10 @@ SolrCloud makes it possible to treat different Solr indexes (shards) as a single
 3. Post the generated CSV-files to Solr with ``for CSV in *.csv; do curl "http://localhost:8983/solr/cdx/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done``
   a. Inspect the result by issuing a `*:*`-query in the Solr admin interface or call `curl "http://localhost:8983/solr/cdx/select?q=*%3A*&rows=1&wt=json&indent=true"` from the command line
 
+## See also
+
+The [tinycdxserver](https://github.com/nla/tinycdxserver) looks very promising. Preliminary tests of solr-cdx indicates
+that the storage needed to hold the index is fairly equal to the storage needed by the raw CDX-files. TinyCDX with
+compression needs less than 1/5th of that space, so clear win to TinyCDX there.
+ 
+Proper large-scale performance testing of solr-cdx vs. TinyCDX would be very relevant.
