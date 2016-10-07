@@ -58,40 +58,34 @@ Interestingly enough, Solr seems to fit well into this. Extremely well, I would 
 
 The only tricky one it #8, which either requires two extra fields (which takes up space) or a potentially very heavy regexp. Or maybe a third solution is better: SURT the URL and split it into domain and path, not indexing the full URL at all? So instead of `query=url:"example.org/kittens.html` it would be `query=domain:"org.example" AND path="kittens.html"`. But that would make simple lookups more expensive in terms of processing power.
 
-## Solr installation
+## Installation
 
-### Standalone (max 2 billion entries)
+Solr-cdx relies on Solr for all the heavy lifting. It is entirely possible to use a standalone Solr installation,
+but this limits the maximum theoretical number of CDX entries to 2 billion. The provided scripts sets up a small
+local SolrCloud, consisting of 2 Solrs and 3 ZooKeepers.
 
-1. Download Solr at http://lucene.apache.org/solr/mirrors-solr-latest-redir.html
-2. Unpack Solr to a sub-folder named `solr` (the default name is solr-version, so rename that to just solr) alongside this README
-3. Start Solr with `solr/bin/solr start (visit http://localhost:8983/solr/#/ to check it works)
-4. Create a cdx collection with `solr/bin/solr create -c cdx -d config/`
-   * A core named `cdx` should now be available from the admin interface (try refreshing the page in the browser)
+0. Adjust the setup (optional)
+ a. Copy `scripts.default.conf` to `scripts.conf`  in the solr-cdx checkout-folder
+ b. Copy `src/main/resources/solrcdx.default.properties` to `solrcdx.properties` in the solr-cdx checkout-folder
+ c. Make any needed changes to the two new settings files
+1. Build solr-cdx with `mvn package`
+2. Install a local SolrCloud with `./install_cloud.sh`, start it with `./start_cloud.sh` and create a cdx-collection with `upload_and_link_config.sh`
+3. Start the solr-cdx server with `java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar -server`
 
-### SolrCloud (no definite max entries)
-
-1. Download Solr at http://lucene.apache.org/solr/mirrors-solr-latest-redir.html
-2. Follow the instructions at https://cwiki.apache.org/confluence/display/solr/Getting+Started+with+SolrCloud to get a cloud running
-3. Modify and use the script `upload_and_link_config.sh` to create a `cdx`-collection in the cloud
 
 ## Indexing
 
-0. Build solr-cdx with `mvn package`
-1. Download a CDX sample from https://archive.org/details/testWARCfiles (the first one from "WARC CDX INDEX FILES" makes the sample links in this README work)
-  a. The first line should be ` CDX N b a m s k r M S V g` (check with `less file.cdx.gz | head -n 1`)
-2. Convert the samples to Solr-usable CSV-files with `java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar WIDE*.cdx.gz`
-3. Post the generated CSV-files to Solr with ``for CSV in *.csv; do curl "http://localhost:8983/solr/cdx/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done``
-  a. Inspect the result by issuing a `*:*`-query in the Solr admin interface or call `curl "http://localhost:8983/solr/cdx/select?q=*%3A*&rows=1&wt=json&indent=true"` from the command line
+A working CDX sample can be downloaded from https://archive.org/details/testWARCfiles (the first one from 
+"WARC CDX INDEX FILES" makes the sample links in this README work). The first line in the CDX file should be 
+` CDX N b a m s k r M S V g` (check with `less file.cdx.gz | head -n 1`).
 
-## Using solr-cdx as a CDX Server
+Index WARC files with `./index.sh *.cdx.gz`. This works with raw CDX files as well as GZipped CDX files.
 
-One step beyond "Not implemented yet".
+## Testing
+  
+All scripts ends processing by outputting a specific URL to inspect.  
 
- 0. Build solr-cdx with `mvn package`
- 1. Copy `src/main/resources/solrcdx.default.properties` to `solrcdx.properties` in the solr-cdx checkout-folder
-  a. Adjust the 
- Start the server with `java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar WIDE*.cdx.gz`  
-
+(yes, this section of the documentation should be expanded)
 
 ## See also
 
