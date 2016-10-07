@@ -13,7 +13,6 @@ if [ -s "scripts.conf" ]; then
     source "scripts.conf"
 fi
 
-
 function log() {
     echo "$1"
 }

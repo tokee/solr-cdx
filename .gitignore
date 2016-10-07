@@ -18,3 +18,5 @@ cloud/
 *.tgz
 *.tar.gz
 solr/
+scripts.conf
+solrcdx.properties
