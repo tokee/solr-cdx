@@ -32,12 +32,12 @@ CDX A b e a m s c k r V v D d g M n
 <schema name="cdx" version="1.5">
     <!--
      The comment-line below is used by upload_and_link_config.sh
-    config-version: 0.3
+    config-version: 0.4
     -->
 
     <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
     <!-- The id field must be unique and should be resonably short. digest+timestamp is a possibility-->
-    <field name="id" type="string" indexed="true" stored="false" required="true" multiValued="false" />
+    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
     <uniqueKey>id</uniqueKey>
 
     <!-- Solr 6+ is capable of using the DocValue-store to retrieve values, so "stored" is not used for most fields with
