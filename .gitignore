@@ -7,11 +7,14 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-solr
 *.csv
 *.cdx.gz
 *~
 *.iml
 /nohup.out
 /.idea/
-logs
+logs&
+cloud/
+*.tgz
+*.tar.gz
+solr/
