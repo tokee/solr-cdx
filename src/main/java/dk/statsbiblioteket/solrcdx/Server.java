@@ -45,17 +45,22 @@ public class Server implements HttpHandler {
         BASE = Util.expand(base);
     }
 
-
     public static void main(String[] args) throws IOException {
+        create();
+    }
+
+    public static HttpServer create() throws IOException {
         int port = Config.getInt("solrcdx.port");
         String message = "Running CDX-server at http://localhost:" + port + "/ connecting to " + SOLR_SELECT;
         log.info(message);
         System.out.println(message);
         // port, backlog (queue size)
-        HttpServer server = HttpServer.create(new InetSocketAddress(port), 100);
-        server.createContext("/", new Server());
-        server.setExecutor(null); // creates a default executor
-        server.start(); // HttpServer is not in daemon-mode, so it runs until the JVM is shut down
+        HttpServer http = HttpServer.create(new InetSocketAddress(port), 100);
+        Server server = new Server();
+        http.createContext("/", server);
+        http.setExecutor(null); // creates a default executor
+        http.start(); // HttpServer is not in daemon-mode, so it runs until the JVM is shut down
+        return http;
     }
 
     @Override
@@ -65,9 +70,28 @@ public class Server implements HttpHandler {
         // https://github.com/internetarchive/wayback/blob/master/wayback-cdx-server/README.md
         if (exchange.getRequestURI().toString().startsWith("/cdx/search")) {
             handleSearch(exchange, params);
+        } else if (exchange.getRequestURI().toString().startsWith("/convert")) {
+            handleConversion(exchange, params);
         } else {
             sendResponse(exchange, 200, BASE);
         }
+    }
+
+    // Streaming converter for CDX input
+    private void handleConversion(HttpExchange exchange, Map<String, String> params) throws IOException {
+        String srcFile = params.get("stream.file");
+        String srcURL = params.get("stream.url");
+        if (srcFile == null && srcURL == null) {
+            sendResponse(exchange, 400, "Either stream.file or stream.url must be specified for convert");
+        }
+        if (srcFile != null && srcURL != null) {
+            sendResponse(exchange, 400, "Only one of stream.file and stream.url must be specified for convert");
+        }
+        @SuppressWarnings("ConstantConditions") URL url = new URL(srcFile != null ? "file://" + srcFile : srcURL);
+        InputStream is = url.openStream();
+
+        exchange.sendResponseHeaders(200, 0); // signal chunked streaming
+        Convert.convertStream(is, url.toString(), exchange.getResponseBody());
     }
 
     private void handleSearch(HttpExchange exchange, Map<String, String> userParams) throws IOException {
@@ -195,5 +219,4 @@ public class Server implements HttpHandler {
         sb.append("?"); // http://localhost:50001/solr/cdx/select?
         SOLR_SELECT = sb.toString();
     }
-
 }

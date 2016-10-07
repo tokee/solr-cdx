@@ -74,51 +74,58 @@ public class Convert {
 
         log.debug("Starting conversion of '" + cdx + "' -> '" + csv + "'");
         final long startTime = System.nanoTime();
-        try (FileInputStream fis = new FileInputStream(cdx.toFile());
-             BufferedReader cdxReader = new BufferedReader(new InputStreamReader(
-                     file.endsWith(".gz") ? new GZIPInputStream(fis) : fis));
-             FileWriter fw = new FileWriter(csv.toFile(), false);
-             BufferedWriter csvWriter = new BufferedWriter(fw)) {
+        long entries;
+        try (InputStream is = new FileInputStream(cdx.toFile());
+             OutputStream os = new FileOutputStream(csv.toFile(), false)) {
+            entries = convertStream(is, file, os);
+        }
+        info(String.format("Converted %d entries from '%s' in %d seconds",
+                           entries, cdx, (System.nanoTime() - startTime) / 1000000 / 60));
+    }
 
+    public static long convertStream(InputStream is, String src, OutputStream os) throws IOException {
+        try (BufferedReader cdxReader = new BufferedReader(new InputStreamReader(
+                src.endsWith(".gz") ? new GZIPInputStream(is) : is));
+             BufferedWriter csvWriter = new BufferedWriter(new OutputStreamWriter(os, "utf-8"))
+        ) {
+            int entries = -1;
             csvWriter.write(CSV_HEADER);
             csvWriter.write("\n");
-            long entries = -1;
             String line;
             while ((line = cdxReader.readLine()) != null) {
                 entries++;
                 if (entries == 0 && !CDX_HEADER.equals(line)) {
                     error(String.format(
                             "The current implementation only works with CDX files with the exact format '%s', " +
-                            "but the format for the file '%s' was '%s'", CDX_HEADER, cdx, line));
-                    return;
+                            "but the format for the file '%s' was '%s'", CDX_HEADER, src, line));
+                    return 0;
                 }
-                String csvLine = convertLine(cdx, line);
+                String csvLine = convertLine(src, line);
                 if (!"".equals(csvLine)) {
                     csvWriter.write(csvLine);
                     csvWriter.write("\n"); // Don't use newline() as we always want \n
                 }
             }
             csvWriter.flush();
-            fw.flush();
-            info(String.format("Converted %d entries from '%s' in %d seconds",
-                               entries, cdx, (System.nanoTime() - startTime) / 1000000 / 60));
+            os.flush();
+            return entries;
         }
     }
 
     private final static Pattern SSPLIT = Pattern.compile(" ");
     private final static Pattern PSPLIT = Pattern.compile("\\)?/");
     public static String convertLine(String cdxLine) {
-        return convertLine(Paths.get("NA"), cdxLine);
+        return convertLine("NA", cdxLine);
     }
-    public static String convertLine(Path cdxFile, String cdxLine) {
+    public static String convertLine(String cdxSource, String cdxLine) {
         // ar,com,adsclasificados,aimogasta)/publicacion/images/209408_1_small.jpg 20110225190307 http://aimogasta.adsclasificados.com.ar/Publicacion/Images/209408_1_small.jpg image/jpeg 200 YN4T25EJJQ4FKAHRXN7TDZF2AOQ43D2X - - 2505 271488344 testWARCfiles/WIDE-20110225183219005-04371-13730~crawl301.us.archive.org~9443.warc.gz
         String tokens[] = SSPLIT.split(cdxLine);
         if (tokens.length != CDX_COLUMN_COUNT) {
             if (CDX_HEADER.equals(cdxLine)) { // Duplicate header (probably due to concatenated CDX files)
-                log.debug("Duplicate header line encountered in CDX-file '" + cdxFile + "'");
+                log.debug("Duplicate header line encountered in CDX-file '" + cdxSource + "'");
                 return "";
             }
-            log.debug("The line '" + cdxLine + "' in CDX-file '" + cdxFile + "' did not conform to the header '" +
+            log.debug("The line '" + cdxLine + "' in CDX-file '" + cdxSource + "' did not conform to the header '" +
                       CDX_HEADER + "'");
             return "";
         }
@@ -131,7 +138,7 @@ public class Convert {
         } catch (NumberFormatException e) {
             if (!("-".equals(tokens[4]) || "TBD".equals(tokens[4]))) {
                 log.debug("The response code '" + tokens[4] + "' was not an integer. Skipping line " + cdxLine +
-                          " from CDX file '" + cdxFile + "'");
+                          " from CDX file '" + cdxSource + "'");
                 return "";
             }
             response = -1; // TODO: What to specify here?
@@ -142,7 +149,7 @@ public class Convert {
         } catch (NumberFormatException e) {
             // No fallback here as entries without offsets are unusable
             log.debug("The offset '" + tokens[9] + "' was not a long. Skipping line " + cdxLine +
-                      " from CDX file '" + cdxFile + "'");
+                      " from CDX file '" + cdxSource + "'");
             return "";
         }
 
@@ -191,4 +198,5 @@ public class Convert {
             System.err.println("Internal error: Unable to fetch 'usage.txt'\n" + e.getMessage());
         }
     }
+
 }
