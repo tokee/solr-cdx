@@ -1,0 +1,12 @@
+Solr-CDX
+
+Start server-mode with
+  java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar -server
+
+Convert CDX til CSV, intended for ingest into Solr, with
+  java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar *.cdx
+  or
+  java -jar target/solrcdx-*-SNAPSHOT-jar-with-dependencies.jar *.cdx.gz
+
+Index CSV to Solr with
+  for CSV in *.csv; do curl "http://${solr.machine}:${solr.port}/${solr.path}/${solrcdx.collection}/update/csv?commit=true&separator=,&escape=\&stream.file=`pwd`/$CSV" ; done

@@ -150,10 +150,11 @@
        modification REST API calls will be allowed; otherwise, error responses will be
        sent back for these requests.
   -->
-  <schemaFactory class="ManagedIndexSchemaFactory">
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+<!--  <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">true</bool>
     <str name="managedSchemaResourceName">managed-schema</str>
-  </schemaFactory>
+  </schemaFactory>-->
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
@@ -268,7 +269,7 @@
 
          Setting the value to true will instruct the underlying Lucene
          IndexWriter to write its info stream to solr's log. By default,
-         this is enabled here, and controlled through log4j.properties.
+         this is enabled here, and controlled through log4j.xml.
       -->
      <infoStream>true</infoStream>
   </indexConfig>
