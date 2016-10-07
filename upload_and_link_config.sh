@@ -1,17 +1,28 @@
 #!/bin/bash
+
+#
+# Uploads Solr configs to the cloud and ensures that the cdx collection is created and
+# assigned the given config.
+#
+# Multiple calls to this command are safe and only affect existing ZooKeeper configs and
+# SolrCloud collection if the configuration files in "config/" has been changed.
+#
+
 set -e
-cd "$(dirname "$0")"
 
-#
-# Uploads and assigns the Solr config files to an existing collection in SolrCloud
-#
+pushd `dirname $0` > /dev/null
+source "scripts.default.conf"
+if [ -s "scripts.conf" ]; then
+    source "scripts.conf"
+fi
 
-SHARDS=1
-COLLECTION="cdxa"
-
-SOLR_SCRIPTS=/home/te/tmp/sumfresh/sites/aviser/solrcloud/solr/machine1/server/scripts
-SOLR="localhost:50001"
-ZOOKEEPER="localhost:2181"
+SOLR_SCRIPTS=$CLOUD/solr1/server/scripts
+if [ ! -d $SOLR_SCRIPTS ]; then
+    >&2 echo "Error: No Solr scripts folder at $SOLR_SCRIPTS"
+    exit 3
+fi
+SOLR="$HOST:$SOLR_BASE_PORT"
+ZOOKEEPER="$HOST:$ZOO_BASE_PORT"
    
 CONFIG_VERSION=`cat config/schema.xml | grep -o "config-version: .*" | cut -d\  -f2`
 CONFIG="cdx_conf_${CONFIG_VERSION}"
@@ -39,4 +50,4 @@ else
 fi
     
 
-echo "Done"
+echo "Done. Inspect the collection at http://$HOST:$SOLR_BASE_PORT/solr/#/$COLLECTION/collection-overview"
