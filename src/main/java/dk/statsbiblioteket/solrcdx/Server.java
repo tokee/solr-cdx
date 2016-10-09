@@ -126,6 +126,12 @@ public class Server implements HttpHandler {
                     solrParams.put("start", entry.getValue());
                     break;
                 }
+                case "output": {
+                    if ("json".equals(entry.getValue())) {
+                        solrParams.put("wt", "json");
+                    }
+                    break;
+                }
                 default: log.warn("Unknown parameter key '" + entry.getKey() + "'");
             }
         }
@@ -147,6 +153,7 @@ public class Server implements HttpHandler {
 
     private void pipeURL(HttpExchange exchange, URL url) throws IOException {
         log.debug("Piping URL: " + url);
+        // TODO: Do a proper piping here, including massaging of csv & json to match the CDX Server API
         String result;
         try {
             result = Util.fetchString(url);
