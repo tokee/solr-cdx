@@ -90,6 +90,67 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Needed for URL canonicalization -->
+        <dependency>
+            <groupId>org.archive</groupId>
+            <artifactId>ia-web-commons</artifactId>
+            <version>RELEASE</version>
+            <exclusions>
+                <exclusion>
+                  <groupId>org.apache.hadoop</groupId>
+                  <artifactId>hadoop-core</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>com.google.guava</groupId>
+                  <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>org.json</groupId>
+                  <artifactId>json</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>org.htmlparser</groupId>
+                  <artifactId>htmlparser</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>org.mozilla</groupId>
+                  <artifactId>juniversalchardet</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>commons-codec</groupId>
+                  <artifactId>commons-codec</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>commons-lang</groupId>
+                  <artifactId>commons-lang</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>commons-io</groupId>
+                  <artifactId>commons-io</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>org.gnu.inet</groupId>
+                  <artifactId>libidn</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>it.unimi.dsi</groupId>
+                  <artifactId>mg4j</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>org.apache.httpcomponents</groupId>
+                  <artifactId>httpcore</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>joda-time</groupId>
+                  <artifactId>joda-time</artifactId>
+                </exclusion>
+                <exclusion>
+                  <groupId>fastutil</groupId>
+                  <artifactId>fastutil</artifactId>
+                </exclusion>
+
+            </exclusions>
+        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
